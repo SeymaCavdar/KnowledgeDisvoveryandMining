@@ -1,0 +1,21 @@
+---
+title: "How to Install R and RStudio"
+output: html_document
+---
+## Windows/Mac
+-	Go to https://cran.r-project.org/ and select "Download R for Windows" and follow the instructions regarding your installation.
+-	For installation, please make sure to install your R into a directory without blank spaces. (i.e. D:/R) This is important for further package installations.
+-	After installing R, download and install Rstudio Desktop from https://www.rstudio.com/products/RStudio/ if you are familiar with networking principles you can also use Rstudio server however for first time users desktop is recommended.
+
+## Ubuntu 16.04
+Install R using following commands:
+
+- sudo echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" | sudo tee -a /etc/apt/sources.list
+- gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
+- gpg -a --export E084DAB9 | sudo apt-key add --
+- sudo apt-get update
+- sudo apt-get install r-base r-base-dev
+- sudo apt-get install gdebi-core
+- wget https://download1.rstudio.org/rstudio-1.0.153-amd64.deb
+- sudo gdebi -n rstudio-1.0.153-amd64.deb
+- rm rstudio-1.0.153-amd64.deb

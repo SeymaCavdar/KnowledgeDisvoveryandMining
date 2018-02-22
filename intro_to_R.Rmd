@@ -1,0 +1,466 @@
+---
+title: "Introduction to R"
+output:
+  html_document:
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    number_sections: no
+    toc: yes
+    toc_float: yes
+---
+
+# R Data Types And Basic Functionalities
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. The purpose of this notebook is to enable you to play around with basic functionalities of R.
+
+The website you see now is a rendered HTML file. to play with the .Rmd file, go to the [original repository](https://github.com/SeymaCavdar/R_for_KnowledgeDiscoveryandMining) and download the .Rmd file and run the codes in RStudio. 
+
+## Data Structures of R
+
+```{r, message=FALSE, warning=FALSE}
+first_variable = 'This is my first R variable.'
+print(first_variable)
+```
+R is a powerful analytical language that is very simple to use. Although it isn't without its quirks so we are going to look at its data types and simple functionalities first.
+
+### Scalar
+Scalar is a variable with single value assigned to it. In R, there are no singly-valued variables (i.e. scalars), instead scalars in R are simply 0-dimensional vectors.
+
+There are various types in R such as character, numeric (float), integer etc. Let's create example variables to demonstrate.
+
+```{r, message=FALSE, warning=FALSE}
+# An integer. Also you can use comments with #
+lecture_code = 580
+
+# A character variable
+lecture_name = 'Knowledge Discovery and Mining'
+
+# A float
+random_float = 1.2
+```
+
+### Vectors
+
+Vector is an R structure that holds values of the same type (e.g. numeric, character). Vectors are 1-dimensional data structures. The only dimension they have is called "length".
+
+There are several ways to assign vectors to a variable. They are listed below and they are all identical:
+
+```{r, message=FALSE, warning=FALSE}
+# An integer vector
+dept_lecture_code = c(901, 580)
+
+# A character vector
+dept_lecture_name = c("Information Systems", "Knowledge Discovery and Mining")
+```
+
+You can also use `assign` function to create vectors:
+
+```{r, message=FALSE, warning=FALSE}
+assign("lecture_prof_assistant",c("Tugba Temizel","Seyma Cavdar"))
+```
+
+You can concatenate vectors and assign to a new vector:
+
+```{r, message=FALSE, warning=FALSE}
+codes_names_vector = c(dept_lecture_code, dept_lecture_name, lecture_prof_assistant)
+```
+
+As you can see `c` function stands for 'combine'. It can combine explicit values or different vectors together to form a new vector.
+
+#### Generating Sequences and Assigning to Vectors
+Sequences are numerical values that follow a certain rule such as numbers from 1 to 30. In R, there are two ways to generate sequences: (1) using `:` operator and (2) `seq` command. 
+
+`:` operator generates a sequence of numbers with 1 difference between them. For instance, 1:30 is the vector c(1,2,...,30). The colon operator has priority within expression. For example, 2*1:15 is the vector c(2,4,...,28,30). 30:1 generates sequence backwards.
+
+```{r, message=FALSE, warning=FALSE}
+#generating sequence with : operator
+one_to_thirty=1:30
+print(one_to_thirty)
+
+#the priority of : operator
+even_numbers_to_thirty=2*1:15
+print(even_numbers_to_thirty)
+
+#backward sequence
+backward_sequence=30:1
+print(backward_sequence)
+```
+
+`seq` command is a more general way to create sequences. It has 5 arguments, only some of which may be specified in any one call. The first two arguments, if given, specify the beginning and end of the sequence. If these are the only two arguments given, the result is the same as the colon operator.
+
+```{r, message=FALSE, warning=FALSE}
+#generating sequence with seq command
+seq(1,30)
+```
+
+The first two arguments can be named `from=value` and `to=value`. See the examples below:
+
+```{r, message=FALSE, warning=FALSE}
+#generating sequence with named arguments in seq command
+seq(from=1,to=30)
+seq(to=30,from=1)
+```
+
+The next two arguments to `seq()` command may be named as `by=value` and `length=value` which specify the step size and the length for the sequence respectively. If neither of these arguments is given, the default `by=1` is assumed.
+
+```{r, message=FALSE, warning=FALSE}
+#by and length arguments of seq command
+seq(from=1,to=30,by=2)
+seq(from=1,length=50,by=.2)
+```
+
+The fifth argument is named along=vector, which is normally used as the only argument to create the sequence 1,2,...,length(vector), or the empty sequence if the vector is empty. 
+
+```{r, message=FALSE, warning=FALSE}
+#generates sequence from 1 to 30 as the length of backward_sequence is equal to 30
+seq(from=1, along=backward_sequence)
+```
+
+A related function is `rep()` which can be used for replicating an object in various ways. 
+
+```{r, message=FALSE, warning=FALSE}
+#replicate dept_lecture_code vector 5 times
+rep(dept_lecture_code,times=5)
+
+#replicate each element of dept_lecture_code vector before moving on to the next 
+rep(dept_lecture_code,each=5)
+```
+
+#### Logical Vectors
+
+As well as numerical vectors, R allows manipulation of logical quantities. The elements of a logical vector can have the values TRUE, FALSE, or NA (for “not available”, see [Missing Values](#Missing Values)). The first two are often abbreviated as T and F, respectively. Note that T and F are just variables which are set to TRUE and FALSE by default, but are not reserved for words and hence can be overwritten by the user. Hence, you should always use TRUE and FALSE.
+
+Logical vectors are generated by conditions.
+
+```{r, message=FALSE, warning=FALSE}
+#generating logical vector by condition
+logical_vector=one_to_thirty>13
+print(logical_vector)
+```
+
+As you can see, `logical_vector` is a vector with the same length as `one_to_thirty` with values FALSE corresponding to the elements of `one_to_thirty` where the condition is not met and TRUE where it is.
+
+The logical operators are `<`, `<=`, `>`, `>=`, `==` for exact equality and `!=` for inequality. In addition, if c1 and c2 are logical expressions, then `c1 & c2` is their intersection (“and”), `c1 | c2` is their union (“or”), and `!c1` is the negation of c1.
+
+Logical vectors may be used in ordinary arithmetic, in which case they are coerced into numeric vectors, FALSE becoming 0 and TRUE becoming 1. However there are situations where logical vectors and their coerced numeric counterparts are not equivalent, for example see the next subsection.
+
+#### Missing Values
+
+In some cases the components of a vector may not be completely known. When an element or value is “not available” or a “missing value” in the statistical sense, a place within a vector may be reserved for it by assigning it the special value `NA`. In general any operation on an `NA` becomes an `NA`. The motivation for this rule is simply that if the specification of an operation is incomplete, the result cannot be known, hence, is not available.
+
+The function `is.na(x)` gives a logical vector of the same size as x with value TRUE if and only if the corresponding element in x is NA.
+
+```{r, message=FALSE, warning=FALSE}
+x=c(1:3,NA)
+ind=is.na(x)
+print(ind)
+```
+
+Notice that the logical expression `x == NA` is quite different from `is.na(x)` since NA is not really a value but a marker for a quantity that is not available. Thus `x == NA` is a vector of the same length as x all of whose values are NA as the logical expression itself is incomplete and hence undecidable.
+
+Note that there is a second kind of “missing” values which are produced by numerical computation, the so-called Not a Number, NaN, values. Examples are given below. They give NaN since the result cannot be defined.
+
+```{r, message=FALSE, warning=FALSE}
+0/0
+#or
+Inf-Inf
+```
+
+In summary, `is.na(x)` is TRUE both for NA and NaN values. To differentiate these, `is.nan(x)` is only TRUE for NaNs.
+
+Missing values are sometimes printed as `<NA>` when character vectors are printed without quotes.
+
+#### Character Vectors
+
+Character quantities and character vectors are used frequently in R, for example as plot labels. Where needed they are denoted by a sequence of characters delimited by the double quote character, e.g., "x-values", "New iteration results".
+ 
+Character strings are entered using either matching double (") or single (’) quotes, but are printed using double quotes (or sometimes without quotes). They use C-style escape sequences, using \\ as the escape character, so \\\\ is entered and printed as \\\\, and inside double quotes " is entered as \\". Other useful escape sequences are \\n, newline, \\t, tab and \\b, backspace--see `?Quotes` for a full list.
+
+Character vectors may be concatenated into a vector by the `c()` function; examples of their use will emerge frequently.
+
+The `paste()` function takes an arbitrary number of arguments and concatenates them one by one into character strings. Any numbers given among the arguments are coerced into character strings in the evident way, that is, in the same way they would be if they were printed. The arguments are by default separated in the result by a single blank character, but this can be changed by the named argument, `sep=string`, which changes it to string, possibly empty.
+
+```{r, message=FALSE, warning=FALSE}
+labs=paste(c("X","Y"),1:10,sep="")
+print(labs)
+```
+
+Note particularly that recycling of short lists takes place here too; thus `c("X", "Y")` is repeated 5 times to match the sequence 1:10.
+
+#### Index Vectors
+
+Subsets of the elements of a vector may be selected by appending to the name of the vector an index vector in square brackets. More generally any expression that evaluates to a vector may have subsets of its elements similarly selected by appending an index vector in square brackets immediately after the expression.
+
+Such index vectors can be any of four distinct types.
+
+1. **A logical vector:** In this case the index vector is recycled to the same length as the vector from which elements are to be selected. Values corresponding to TRUE in the index vector are selected and those corresponding to FALSE are omitted.
+
+```{r, message=FALSE, warning=FALSE}
+#a vector containing non-missing values of one_to_thirty
+y=one_to_thirty[!is.na(one_to_thirty)]
+```
+
+Note that if one_to_thirty has missing values, y will be shorter than one_to_thirty.
+
+```{r, message=FALSE, warning=FALSE}
+#a vector containing the values of one_to_thirty which are non-missing and positive
+(one_to_thirty+1)[(!is.na(one_to_thirty))&one_to_thirty>0]=z
+```
+
+2. **A vector of positive integral quantities:** In this case the values in the index vector must lie in the set `{1, 2, . . . , length(x)}`. The corresponding elements of the vector are selected and concatenated, in that order, in the result. The index vector can be of any length and the result is of the same length as the index vector. For example `x[6]` is the sixth component of x.
+
+```{r, message=FALSE, warning=FALSE}
+#select the first 10 elements
+one_to_thirty[1:10]
+```
+
+3. **A vector of negative integral quantities:** Such an index vector specifies the values to be excluded rather than included.
+
+```{r, message=FALSE, warning=FALSE}
+#discard the first 5 elements
+one_to_thirty[-(1:5)]
+```
+
+4. **A vector of character strings:** This possibility only applies where an object has a names attribute to identify its components. In this case a sub-vector of the names vector may be used in the same way as the positive integral labels in item 2 further above. 
+
+```{r, message=FALSE, warning=FALSE}
+fruit=c(5,10,1,20)
+names(fruit)=c("orange","banana","apple","peach")
+lunch=fruit[c("apple","orange")]
+print(lunch)
+```
+
+The advantage is that alphanumeric names are often easier to remember than numeric indices. This option is particularly useful in connection with data frames, as we will see later.
+
+An indexed expression can also appear on the receiving end of an assignment, in which case the assignment operation is performed only on those elements of the vector. The expression must be of the form `vector[index_vector]` as having an arbitrary expression in place of the vector name does not make much sense here.
+
+```{r, message=FALSE, warning=FALSE}
+#replace missing values with zeros
+one_to_thirty[is.na(one_to_thirty)]=0
+```
+
+### Matrices and Arrays
+
+Arrays are data n-dimensional data structures that hold the data of the same type. Arrays have dimension `(dim)` attribute. Matrices are two-dimensional arrays. 
+
+```{r, message=FALSE, warning=FALSE}
+#define an array
+z=array(1:24,dim=c(3,4,2))
+print(z)
+```
+
+#### Indexing
+
+Individual elements of an array may be referenced by giving the name of the array followed by the subscripts in square brackets, separated by commas.
+ 
+More generally, subsections of an array may be specified by giving a sequence of index vectors in place of subscripts; however if any index position is given an empty index vector, then the full range of that subscript is taken.
+
+Continuing the previous example, `z[2,,]` is a 4x2 array with dimension vector `c(4,2)`.
+
+```{r, message=FALSE, warning=FALSE}
+#values of the z[2,,] array
+c(z[2,1,1], z[2,2,1], z[2,3,1], z[2,4,1], z[2,1,2], z[2,2,2], z[2,3,2], z[2,4,2])
+```
+
+`z[,,]` stands for the entire array which is the same as omitting the subscripts entirely and using `z` alone.
+
+If an array name is given with just one subscript or index vector, then the corresponding values of the data vector only are used; in this case the dimension vector is ignored. This is not the case, however, if the single index is not a vector but itself an array, as we next discuss.
+
+#### Index Matrices
+
+As well as an index vector in any subscript position, a matrix may be used with a single index matrix in order either to assign a vector of quantities to an irregular collection of elements in the array, or to extract an irregular collection as a vector.
+
+A matrix example makes it clear. In the case of a doubly indexed array, an index matrix may be given consisting of two columns and as many rows as desired. The entries in the index matrix are the row and column indices for the doubly indexed array. Suppose for example we have a 4 by 5 array X and we wish to do the following:
+
+* Extract elements X[1,3], X[2,2] and X[3,1] as a vector
+* Replace those entries with zeros in the array of X
+
+```{r, message=FALSE, warning=FALSE}
+x=array(1:20,dim=c(4,5)) #generate a 4x5 array
+x
+```
+
+```{r, message=FALSE, warning=FALSE}
+i=array(c(1:3,3:1),dim=c(3,2)) #i is a 3x2 index array
+i
+```
+
+```{r, message=FALSE, warning=FALSE}
+#extract those elements from x
+x[i]
+```
+
+```{r, message=FALSE, warning=FALSE}
+#replace the elements selected with zeros
+x[i]=0
+x
+```
+
+Negative indices are not allowed in index matrices. NA and zero values are allowed: rows in the index matrix containing a zero are ignored, and rows containing an NA produce an NA in the result.
+
+#### Matrix Multiplication
+
+The operator %\*% is used for matrix multiplication. An n by 1 or 1 by n matrix may of course be used as an n-vector if in the context such is appropriate. Conversely, vectors which occur in matrix multiplication expressions are automatically promoted either to row or column vectors, whichever is multiplicatively coherent, if possible.
+
+```{r, message=FALSE, warning=FALSE}
+#A and B are the square matrices of the same size
+A=matrix(1:4,nrow=2,ncol=2)
+B=matrix(5:8,nrow=2,ncol=2)
+#element by element products
+A*B
+```
+
+```{r, message=FALSE, warning=FALSE}
+#matrix product
+A%*%B
+```
+
+The function `crossprod()` forms “cross products”, meaning that `crossprod(A, B)` is the same as `t(A) %*% B` but the operation is more efficient. If the second argument of `crossprod()` is omitted, it is taken to be the same as the first.
+
+```{r, message=FALSE, warning=FALSE}
+#cross products of A and B with crossprod function
+crossprod(A,B)
+```
+
+The meaning of `diag()` depends on its argument. `diag(v)`, where v is a vector, gives a diagonal matrix with elements of the vector as the diagonal entries. On the other hand `diag(M)`, where M is a matrix, gives the vector of main diagonal entries of M. Also, somewhat confusingly, if k is a single numeric value then `diag(k)` is the k by k identity matrix!
+
+```{r, message=FALSE, warning=FALSE}
+#diagonal matrix of a vector
+diag(dept_lecture_code)
+```
+
+```{r, message=FALSE, warning=FALSE}
+#diagonal elements of a matrix
+diag(A)
+```
+
+```{r, message=FALSE, warning=FALSE}
+#diag function with numeric value
+d=2
+diag(d) #produces identity matrix with dimension d
+```
+
+#### Combining Matrices
+
+In R, `cbind()` forms matrices by binding together matrices horizontally, or column-wise, and `rbind()` vertically, or row-wise. The arguments to `cbind()` must be either vectors of any length, or matrices with the same column size, that is the same number of rows.
+
+```{r, message=FALSE, warning=FALSE}
+#column-wise binding
+cbind(A,B)
+
+#row-wise binding
+rbind(A,B)
+```
+
+### Lists 
+
+An R list is an object consisting of an ordered collection of objects known as its components.
+
+There is no particular need for the components to be of the same mode or type, and, for example, a list could consist of a numeric vector, a logical value, a matrix, a complex vector, a character array, a function, and so on. Here is a simple example of how to make a list:
+
+
+```{r, message=FALSE, warning=FALSE}
+#A list
+family=list(name="Fred",wife="Mary",noChildren=3,childAges=c(4,7,9))
+```
+
+Components are always numbered and may always be referred to as such. Thus if `family` is the name of a list with four components, these may be individually referred to as
+
+```{r, message=FALSE, warning=FALSE}
+#Components of a list
+family[[1]]
+family[[2]]
+family[[3]]
+family[[4]]
+family[[4]][[2]] #gives the second element of the 4th component
+length(family) #the number of components of the list
+```
+ 
+Components of lists may also be named, and in this case the component may be referred to either by giving the component name as a character string in place of the number in double square brackets, or, more conveniently, by giving an expression of the form `name$component_name`
+
+```{r, message=FALSE, warning=FALSE}
+#the expressions below give the same result
+family$name #calling with component name
+family[[1]] #calling with index
+
+#calling the vector elements in the list
+family$childAges[1]
+family[[4]][[1]]
+```
+
+### Data Frames
+
+A data frame is a list with class "data.frame". There are restrictions on lists that may be made into data frames, namely 
+* The components must be vectors (numeric, character, or logical), factors, numeric matrices, lists, or other data frames.
+* Matrices, lists, and data frames provide as many variables to the new data frame as they have columns, elements, or variables, respectively. 
+* Numeric vectors, logicals and factors are included as is, and by default1 character vectors are coerced to be factors, whose levels are the unique values appearing in the vector. 
+* Vector structures appearing as variables of the data frame must all have the same length, and matrix structures must all have the same row size. 
+
+A data frame may for many purposes be regarded as a matrix with columns possibly of differing modes and attributes. It may be displayed in matrix form, and its rows and columns extracted using matrix indexing conventions.
+
+```{r, message=FALSE, warning=FALSE}
+# A data frame
+codes_names_df = data.frame(dept_lecture_code, dept_lecture_name)
+```
+
+##Reading Data from Files
+
+Large data objects will usually be read as values from external files rather than entered during an R session at the keyboard. R input facilities are simple and their requirements are fairly strict and even rather inflexible. There is a clear presumption by the designers of R that you will be able to modify your input files using other tools, such as file editors or Perl1 to fit in with the requirements of R. Generally this is very simple.
+ 
+If variables are to be held mainly in data frames, as we strongly suggest they should be, an entire data frame can be read directly with the `read.table()` function. There is also a more primitive input function, `scan()`, that can be called directly.
+
+For more details on importing data into R and also exporting data, see the R Data Import/Export manual.
+
+### Accessing built-in data sets
+
+Around 100 datasets are supplied with R (in package datasets), and others are available in packages (including the recommended packages supplied with R). To see the list of datasets currently available use `data()`.
+
+```{r, message=FALSE, warning=FALSE}
+# Iris is an existing dataset in R. You can load it directly
+data(iris)
+str(iris)
+```
+
+`str` function outputs the names, types and first few entries of a data frame. This allows you to take a quick look at the data. As you can see, 'Species' variable in the data frame is a new data type called "Factor". This is essentially a character variable with known amount of different values. This allows R to run count-type statistics on it. Most character variables are represented as factors by default when loading into data frames unless explicitly specified. We will talk more about factors later.
+
+### Basic Statistics
+
+Summary function outputs basic statistics regarding the data frame. For numeric variables, these statistics describe the five-point statistics. For factor variables, this is of count-type. If we represented our character variable as character type instead of factor, that would be impossible.
+
+```{r, message=FALSE, warning=FALSE}
+iris$Species = as.character(iris$Species)
+summary(iris)
+```
+I did two things in the previous chunk. First, I accessed the `Species` variable, and casted it into type character. Then, I took the summary of the data frame once more. `$` operator is the simplest way to index a variable in R. However it's not fool-proof. The recommended way to index a variable is as follows, with double brackets and quote-marked-variable-names:
+```{r, message=FALSE, warning=FALSE}
+data(iris) # Reload original iris data
+iris[["Species"]] = as.character(iris[["Species"]])
+summary(iris)
+```
+You can perform mathematical computations on numeric variables and create new ones using the same syntax.
+```{r, message=FALSE, warning=FALSE}
+iris[["New_Numeric_Var_1"]] = iris[["Sepal.Length"]] + iris[["Sepal.Width"]]
+iris$New_Numeric_Var_2 = iris$Sepal.Length/(iris$Sepal.Width+0.00001)
+```
+
+In the first line, I indexed the variables using the prefered method and made a new variable. In the second line, I used the simple method and made a new variable. I also added a scalar to all values in `Sepal.Width` variable. R is a very flexible language. You can do most computations without explicitly casting the data into the same dimension, however this may cause issues. I won't demonstrate this for now, but make sure to regularly check your data for any inconsistencies that this flexibility might cause.
+
+
+## Installing Packages
+For future tasks, you will need to install different packages. To perform this installation, either select "Install Packages" from "Tools" menu in RStudio, or use the `install.packages` command in console. Let's install `stringr` package that you will be using in the class using this command.
+
+```{r, message=FALSE, warning=FALSE}
+# install.packages("stringr") 
+# I have this package already installed so I'm skipping this. You should run this command.
+```
+
+R also has control structures that any programming language has so let's try to install this package with an 'if' structure.
+
+```{r, message=FALSE, warning=FALSE}
+if(!"stringr"%in%installed.packages()){
+  install.packages("stringr") 
+}
+```
+
+What this chunk does is, checks whether `stringr` is installed and installs it if it's not installed. `installed.packages()` command lists all the installed packages in your default libraries. `%in%` expression checks whether the left hand side is in the right hand side and '!' notation is negation in R. As before, 'install.packages' command installs the package. There are for loops, while loops, try-catch structures etc. in R. We can talk about these when the need arises. If you want to see more examples on control structures, go to [one of](https://www.r-bloggers.com/control-structures-loops-in-r/) the several tutorials available online.

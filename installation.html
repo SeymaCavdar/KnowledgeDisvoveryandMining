@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<title>How to Install R and RStudio</title>
+</head>
+<body>
+<div class="w3-container">
+
+  <div class="w3-bar w3-dark-grey">
+    <a href="https://seymacavdar.github.io/KnowledgeDiscoveryandMining/index.html" class="w3-bar-item w3-button">Home</a>
+    <div class="w3-dropdown-hover">
+      <button class="w3-button">Tutorials</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+        <a href="https://seymacavdar.github.io/KnowledgeDiscoveryandMining/installation.html" class="w3-bar-item w3-button">R / Rstudio Installation</a>
+        <a href="https://seymacavdar.github.io/KnowledgeDiscoveryandMining/intro_to_R.nb.html" class="w3-bar-item w3-button">Introduction to R</a>
+      </div>
+    </div>
+	
+  </div>
+  <h1 class="title toc-ignore">How to Install R and RStudio</h1>
+<div id="windowsmac" class="section level2">
+<h2>Windows/Mac</h2>
+<ul>
+<li>Go to <a href="https://cran.r-project.org/" class="uri">https://cran.r-project.org/</a> and select “Download R for Windows” and follow the instructions regarding your installation.</li>
+<li>For installation, please make sure to install your R into a directory without blank spaces. (i.e. D:/R) This is important for further package installations.</li>
+<li>After installing R, download and install Rstudio Desktop from <a href="https://www.rstudio.com/products/RStudio/" class="uri">https://www.rstudio.com/products/RStudio/</a> if you are familiar with networking principles you can also use Rstudio server however for first time users desktop is recommended.</li>
+</ul>
+</div>
+<div id="ubuntu-16.04" class="section level2">
+<h2>Ubuntu 16.04</h2>
+<p>Install R using following commands:</p>
+<ul>
+<li>sudo echo “deb <a href="http://cran.rstudio.com/bin/linux/ubuntu" class="uri">http://cran.rstudio.com/bin/linux/ubuntu</a> xenial/” | sudo tee -a /etc/apt/sources.list</li>
+<li>gpg –keyserver keyserver.ubuntu.com –recv-key E084DAB9</li>
+<li>gpg -a –export E084DAB9 | sudo apt-key add –</li>
+<li>sudo apt-get update</li>
+<li>sudo apt-get install r-base r-base-dev</li>
+<li>sudo apt-get install gdebi-core</li>
+<li>wget <a href="https://download1.rstudio.org/rstudio-1.0.153-amd64.deb" class="uri">https://download1.rstudio.org/rstudio-1.0.153-amd64.deb</a></li>
+<li>sudo gdebi -n rstudio-1.0.153-amd64.deb</li>
+<li>rm rstudio-1.0.153-amd64.deb</li>
+</ul>
+</div>
+
+
+
+</div>
+
+
+
+
+</body>
+</html>
