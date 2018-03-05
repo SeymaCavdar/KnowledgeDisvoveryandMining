@@ -2,10 +2,12 @@
 title: "Introduction to R"
 output:
   html_document:
+    theme: journal
     number_sections: no
     toc: yes
     toc_float: yes
   html_notebook:
+    theme: journal
     number_sections: no
     toc: yes
     toc_float: yes
@@ -205,7 +207,7 @@ Note that if one_to_thirty has missing values, y will be shorter than one_to_thi
 
 ```{r, message=FALSE, warning=FALSE}
 #a vector containing the values of one_to_thirty which are non-missing and positive
-(one_to_thirty+1)[(!is.na(one_to_thirty))&one_to_thirty>0]=z
+z=(one_to_thirty+1)[(!is.na(one_to_thirty))&one_to_thirty>0]
 ```
 
 2. **A vector of positive integral quantities:** In this case the values in the index vector must lie in the set `{1, 2, . . . , length(x)}`. The corresponding elements of the vector are selected and concatenated, in that order, in the result. The index vector can be of any length and the result is of the same length as the index vector. For example `x[6]` is the sixth component of x.

@@ -1,0 +1,399 @@
+---
+title: "Dimensionality Reduction and Discretization"
+output: 
+  html_document:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+---
+
+**Objectives**:
+
+The objective of this document is to give a brief introduction to dimensionality reduction and discretization. At the end of this tutorial you will have learned
+
+* Dimensionality reduction
+    + Feature subset selection techniques
+    + Feature reduction techniques
+  
+* Discretization
+  
+## Dimensionality Reduction
+
+Dimensionality reduction is performed in two different ways. The first one is feature subset selection and the second one is feature reduction or extraction. This tutorial will briefly cover both of these topics.
+
+Let's load our main data to use:
+
+```{r, message=FALSE, warning=FALSE}
+data  <-  read.csv(url("https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"),
+                   header  =  T,  sep=";")
+
+```
+
+### Feature Subset Selection
+
+Feature subset selection aims to select an optimal subset of existing features for modelling purposes. There are two ways to perform feature subset selection: by using wrappers or by using filters. This tutorial will briefly cover both of these topics.
+
+#### Wrappers
+
+Wrappers are methods that evaluate predictor (feature) performance by adding/removing them into models and measuring the model performance.
+
+For wrapper methods, we will use the `caret` package.
+
+```{r, message=FALSE, warning=FALSE}
+if  ("caret"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("caret")
+}
+require(caret)
+```
+
+##### Recursive Feature Elimination
+
+When using recursive feature elimination, initially all variables are included in the model. Later, by removing variables, model performance is recomputed and optimal set of features is determined.
+
+In `caret` package, recursive feature elimination can be utilized with several models such as linear regression (`lmFuncs`), random forests (`rfFuncs`), naive Bayes (`nbFuncs`) and bagged trees (`treebagFuncs`). You can also use other functions that can be used with `caret`'s train function. For further information, check `caret`'s package documentation.
+
+```{r, message=FALSE, warning=FALSE}
+#subset the data
+data.train.index <- createDataPartition(data[,12], p=.8, list = F, times = 1) 
+data.train <- data[data.train.index,] 
+#Set the control variables for feature selection 
+#We are using linear regression model (lmFuncs) and cross-validation (cv) method to verify with 10 cross-validations 
+control.rfe <- rfeControl(functions=lmFuncs, method="cv", number=10) 
+#x defines predictors, while y defines the output 
+results.rfe <- rfe(x = data.train[,-12], y = data.train[,12], sizes = c(1:11), 
+                   rfeControl = control.rfe) 
+print(results.rfe) #Print the results
+```
+
+```{r, message=FALSE, warning=FALSE}
+predictors(results.rfe) #Print the names of selected variables
+```
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+trellis.par.set(caretTheme())#Set the theme for the RMSE plor
+
+plot(results.rfe, type = c("g","o"))#Plot RMSE
+```
+
+In the table, RMSE refers to "root mean squared error". In general, we want this to be as low as possible (while also paying attention to possible over fitting problems).
+
+#### Filters
+
+Filters are methods that evaluate predictor (feature) performance outside models. They usually employ some form of scoring of the variables based on different criteria.
+
+For filter methods, we will use `FSelector` package.
+
+```{r, message=FALSE, warning=FALSE}
+if  ("FSelector"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("FSelector")
+}
+require(FSelector)
+```
+
+##### Entropy Based Methods
+
+These methods filter features based on entropy-based scoring.
+
+**Information Gain**
+
+```{r, message=FALSE, warning=FALSE}
+weights.ig <- information.gain(quality~.,
+                               data = data.train) #Compute the weights of variables
+print(weights.ig) #Print the weights
+```
+
+```{r, message=FALSE, warning=FALSE}
+subset.ig <- cutoff.k(weights.ig, 5) #Get the most influential 5 variables
+f.ig <- as.simple.formula(subset.ig, "quality") #Express the relationship as a formula 
+print(f.ig) #Print formula
+```
+
+**Gain Ratio**
+
+```{r, message=FALSE, warning=FALSE}
+weights.gr <- gain.ratio(quality~.,
+                               data = data.train) #Compute the weights of variables
+print(weights.gr) #Print the weights
+```
+
+```{r, message=FALSE, warning=FALSE}
+subset.gr <- cutoff.k(weights.gr, 5) #Get the most influential 5 variables
+f.gr <- as.simple.formula(subset.gr, "quality") #Express the relationship as a formula 
+print(f.gr) #Print formula
+```
+
+##### Chi-Squared
+
+```{r, message=FALSE, warning=FALSE}
+weights.chi <- chi.squared(quality~.,
+                               data = data.train) #Compute the weights of variables
+print(weights.chi) #Print the weights
+```
+
+```{r, message=FALSE, warning=FALSE}
+subset.chi <- cutoff.k(weights.chi, 5) #Get the most influential 5 variables
+f.chi <- as.simple.formula(subset.chi, "quality") #Express the relationship as a formula 
+print(f.chi) #Print formula
+```
+
+##### Correlation
+
+**Linear Correlation**
+
+Computes correlations using Pearson coefficient to see if there is a linear correlation.
+
+```{r, message=FALSE, warning=FALSE}
+weights.lc <- linear.correlation(quality~.,
+                               data = data.train) #Compute the weights of variables
+print(weights.lc) #Print the weights
+```
+
+```{r, message=FALSE, warning=FALSE}
+subset.lc <- cutoff.k(weights.lc, 5) #Get the most influential 5 variables
+f.lc <- as.simple.formula(subset.lc, "quality") #Express the relationship as a formula 
+print(f.lc) #Print formula
+```
+
+**Rank Correlation**
+
+Computes correlations using Spearman coefficient to see if there is a monotonic correlation. This could be more useful in case of non-linear monotonic relationships. Let's illustrate the relationship:
+
+```{r, message=FALSE, warning=FALSE}
+x <- (1:100) #Generate numbers from 1 to 100
+y <- exp(x) #Exponentiate them
+
+cor(x, y, method = "pearson") #Equals to roughly 0.25
+```
+
+```{r, message=FALSE, warning=FALSE}
+cor(x, y, method = "spearman") #Equals to 1
+```
+
+Now let's filter using rank correlation:
+
+```{r, message=FALSE, warning=FALSE}
+weights.rc <- rank.correlation(quality~.,
+                               data = data.train) #Compute the weights of variables
+print(weights.rc) #Print the weights
+```
+
+```{r, message=FALSE, warning=FALSE}
+subset.rc <- cutoff.k(weights.rc, 5) #Get the most influential 5 variables
+f.rc <- as.simple.formula(subset.rc, "quality") #Express the relationship as a formula 
+print(f.rc) #Print formula
+```
+
+All of the filtering methods return the same subset of features.
+
+### Feature Reduction (Feature Extraction)
+
+Feature reduction or feature extraction techniques aim to generate new, more informative features using the existing set of features. They aim to incorporate the information provided by existing features into a lower number of newly generated features.
+
+#### Linear
+
+Linear feature extraction techniques aim to generate new features by using a linear combination of existing features.
+
+##### Principle Component Analysis
+
+Principle component analysis (PCA) projects the entire n-feature set into a k linearly independent features (k<=n). Instead of using the original variables, you can use the computed principle components for modelling.
+
+```{r, message=FALSE, warning=FALSE}
+fit.pca <- prcomp(data.train[,-12])
+summary(fit.pca)
+```
+
+Based on the PCA summary, we can see that the first two principle components account for 98% of the variance in the data, so we can use these components, instead of the whole dataset.
+
+```{r, message=FALSE, warning=FALSE}
+new.data.pca <- fit.pca$x[,1:2]
+summary(new.data.pca)
+```
+
+##### Singular Value Decomposition
+
+Singular value decomposition (SVD) is similar to PCA. It also uses projection to lower dimensions. The SVD is a numerical method while PCA is an analysis approach. In R, `prcomp` functions uses svd (numerical method) to calculate principle components which is more stable than using the euclidean distance. The output of `prcomp` function is better in terms of interpretability than the output of `svd` function. Also, `summary` function does not work properly for the output of `svd`.
+
+```{r, message=FALSE, warning=FALSE}
+fit.svd <- svd(data.train[,-12])
+```
+
+To see the amount of variance each component accounts for, use the following code:
+
+```{r, message=FALSE, warning=FALSE}
+cumsum(fit.svd$d)/sum(fit.svd$d)
+```
+
+According to the results, first two components account for 94% of variance and we can use those two.
+
+```{r, message=FALSE, warning=FALSE}
+new.data.svd <- fit.svd$u[,1:2]
+summary(new.data.svd)
+```
+
+As mentioned previously, using `prcomp` is more intuitive and easier than using `svd`.
+
+##### Factor Analysis
+
+Factor analysis is a general term of methods that use linear projection (such as PCA). Instead of using a specific method, we can use general factor analysis to reduce the dimensionality.
+
+First, we need to determine the number of factors we want to obtain.
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+if  ("nFactors"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("nFactors")
+}
+library(nFactors)
+ev <- eigen(cor(data.train[,-12])) # get eigenvalues
+ap <- parallel(subject=nrow(data.train[,-12]),var=ncol(data.train[,-12]),
+               rep=100,cent=.05)
+nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+plotnScree(nS)
+```
+
+At the scree plot that we have obtained, optimal coordinates is determined as 3. This means, the optimal number of factors that explain the variability in the data is three.
+
+So we can now obtain our factors:
+
+```{r, message=FALSE, warning=FALSE}
+fit.fa <- factanal(data.train[,-12], 3, rotation="varimax")
+print(fit.fa, digits=2, cutoff=.1, sort=TRUE)
+```
+
+As we have mentioned previously that factors are linear combinations of variables. `fit.pa$loadings` hold the information of which variable is included in which factor and its coefficient in linear combination.
+
+#### Non-linear
+
+Non-linear feature extraction techniques aim to generate new features by using a non-linear combination of existing features.
+
+##### Multidimensional Scaling
+
+Multidimensional scaling uses similarity measures to reduce the dimension of the data. First we compute a distance matrix and based on that distance matrix, we reduce the dimension.
+
+```{r, message=FALSE, warning=FALSE}
+d <- dist(data.train[,-12])
+fit.mds <- cmdscale(d,eig=TRUE, k=2) #Reduce data to two variables
+new.data.mds <- fit.mds$points
+```
+
+You can use `new.data.mds` instead of all the variables in the dataset.
+
+##### Isomap
+
+Isomap is a similar function to multidimensional scaling and it extends metric multidimensional scaling (MDS) by incorporating the geodesic distances imposed by a weighted graph.
+
+```{r, message=FALSE, warning=FALSE}
+if  ("vegan"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("vegan")
+}
+require(vegan)
+d <- vegdist(data.train[,-12])
+fit.iso <- isomap(d, ndim=2, k = 3, fragmentedOK = T)
+#Reduce data to two variables (ndim) and retain 3 (k) distances per data point.
+#Data might be fragmented, we tell the function that it's ok.
+new.data.iso <- fit.iso$points
+```
+
+## Discretization
+
+Discretization methods aim to discretize continuous variables. For discretization we will use two packages. Namely, `discretization` and `arules`.
+
+Assume that we want to perform binning (either equal width or equal frequency), following code allows us to do that. Initially, we have a data frame of 11 predictor variables and one outcome variable. We want to discretize the predictor variables which are numeric. `discretize` function only works on vectors. Instead of discretizing all of the predictor variables one by one inside a for loop, we can use the `lapply` function which takes a function and applies it to all of the variables in a data frame. `discretize` function takes three main inputs: the data vector to be discretized, the method and the number of categories. Inside the `lapply` function, we also need to determine the method and the number of categories. `lapply` splits the data frame into vectors and gives them to the function as input. `lapply` returns a list as an output. 
+
+`discretize` function returns a vector of factors which represent the interval that that particular data point falls into. So if you want the numeric discretization, you need to apply `as.numeric` function to all variables, again we use `lapply` for this. Finally, we convert the list back to a data frame. For association mining, you may want to keep the factor form of discretization.
+
+```{r, message=FALSE, warning=FALSE}
+#Install and load packages
+if  ("arules"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("arules")
+}
+require(arules)
+#Loop through all variables in dataset to discretize.
+data.eqw <- NULL
+for (i in 1:11){ 
+  d <- discretize(data.train[,i], method = "interval", categories =3) 
+  data.eqw <- cbind(data.eqw, d) 
+}
+names(data.eqw) <- names(data.train[,-12])
+```
+
+```{r, message=FALSE, warning=FALSE}
+#Or equivalently we can use lapply syntax
+#Apply equal width binning discretization to all variables in dataset.
+data.eqw <- data.frame(lapply(data.train[,-12],
+                              FUN = discretize, method = "interval", categories = 3))
+#Take a look at first few data points in the data.eqw
+head(data.eqw)
+```
+
+```{r, message=FALSE, warning=FALSE}
+#Turn it into a numeric data frame
+data.eqw <- data.frame(lapply(data.eqw, as.numeric))
+#Take a second look at first few data points in the data.eqw
+head(data.eqw)
+```
+
+```{r, message=FALSE, warning=FALSE}
+#For equal frequency
+data.eqf <- lapply(data.train[,-12], 
+                   FUN = discretize, method = "frequency", categories = 3) 
+data.eqf <- data.frame(lapply(data.eqf, as.numeric)) 
+```
+
+```{r, message=FALSE, warning=FALSE}
+#For k-means clustering discretization 
+data.eqc <- lapply(data.train[,-12], 
+                   FUN = discretize, method = "cluster", categories = 3) 
+data.eqc <- data.frame(lapply(data.eqc, as.numeric)) 
+```
+
+```{r, message=FALSE, warning=FALSE}
+#You can also use user-specified intervals 
+##Lets assume that we want to discretize by quantiles of each variable 
+cats <- data.frame(lapply(data.train[,-12], FUN = quantile)) #We need to add -Inf and Inf as lower and upper boundaries. #rep function replicates the given value or variable by given number. 
+cats <- rbind(rep(-Inf, 11), cats, rep(Inf,11)) 
+#In this case we need to use mapply instead of lapply because
+#we have multiple different inputs to the function for each variable 
+data.us <- data.frame(mapply(data.train[,-12], 
+                             FUN = discretize, method = "fixed", categories = cats)) 
+data.us <- data.frame(lapply(data.us, as.numeric))
+```
+
+If you want to use different boundaries for each variable, just bind them into a data.frame and pass it into mapply as we did above. Don't forget to add `-Inf` and `Inf`.
+
+We can also use Minimum Description Length Principle (`mdlp`) to discretize the data points, which uses entropy criterion to determine the optimal discretization. It returns two lists. One holds the cutpoints (boundaries) of the discretization, and the second one holds the discretized data. Keep in mind that `mdlp` is a supervised clustering method, so you need to provide the outcome variable along with the dataset. By default, `mdlp` assumes the last column in your data frame to be the outcome variable, which is true in our case as our outcome variable is "quality".
+
+```{r, message=FALSE, warning=FALSE}
+#Install and load packages
+if  ("discretization"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("discretization")
+}
+require(discretization)
+```
+
+```{r, message=FALSE, warning=FALSE}
+#Loop through all variables in dataset to discretize.
+data.mdlp <- mdlp(data.train)
+summary(data.mdlp$Disc.data)
+```
+
+**Useful Links**:
+
+* Statsoft PCA and Factor Analysis: http://www.statsoft.com/Textbook/Principal-Components-Factor-Analysis
+    + Details on PCA and Factor Analysis
+
+* Statsoft Multidimensional Scaling: http://www.statsoft.com/Textbook/Multidimensional-Scaling 
+    + Details on multidimensional scaling
+
+* Caret webpage: http://topepo.github.io/caret/index.html
+     + Detailed information about caret package
+  
+* Dimensionality reduction in R: https://en.wikibooks.org/wiki/Data_Mining_Algorithms_In_R/Dimensionality_Reduction
+    + Details on using R for dimensionality reduction
+
+Further useful documents will be uploaded to METU Class.

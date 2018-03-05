@@ -2,10 +2,12 @@
 title: "Data Visualization"
 output:
   html_document:
+    theme: journal
     number_sections: no
     toc: yes
     toc_float: yes
   html_notebook:
+    theme: journal
     number_sections: no
     toc: yes
     toc_float: yes

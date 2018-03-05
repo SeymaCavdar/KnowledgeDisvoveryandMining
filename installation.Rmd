@@ -1,7 +1,10 @@
 ---
 title: "How to Install R and RStudio"
-output: html_document
+output: 
+  html_document:
+    theme: journal
 ---
+
 ## Windows/Mac
 -	Go to https://cran.r-project.org/ and select "Download R for Windows" and follow the instructions regarding your installation.
 -	For installation, please make sure to install your R into a directory without blank spaces. (i.e. D:/R) This is important for further package installations.

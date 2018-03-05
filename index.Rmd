@@ -1,0 +1,28 @@
+---
+title: "IS580 Knowledge Discovery and Mining Tutorials Page"
+output: 
+  html_document:
+    theme: journal
+  
+---
+Welcome to IS580 Knowledge Discovery and Mining Tutorials page. This lecture will be given by [Assoc.Prof.Dr.Tugba Taskaya Temizel](https://blog.metu.edu.tr/ttemizel/). The assistant who will be doing the applied portion of the course is Seyma Cavdar. This page will contain the lab codes for the class as RMarkdown documents.You can go to the [github repository](https://github.com/SeymaCavdar/KnowledgeDisvoveryandMining) for the full Rmarkdown files to use in your local environment.The entirety of materials will be available through [ODTU-Class](https://odtuclass.metu.edu.tr/). This blog only aims to provide a collection of rendered RMarkdown files.
+
+The syllabus for this year's lecture is as follows:
+
+* Introduction to data mining
+* Data preprocessing
+* Mining frequent patterns, associations, and correlations
+* Prediction
+* Classification (Logistic regression, linear&non-linear classification, neural networks, SVM, linear discriminant analysis, Bayesian classification, k-NN, decision trees, rule-based classification)
+* Evaluation and credibility
+* Clustering (Hierarchical, density-based, model-based)
+* Combining methods
+* Advanced methods
+
+The contents for the applied portion are as follows:
+
+* Descriptive statistics and visualization
+* Missing data handling
+* Dimensionality reduction and discretization
+* Association mining
+* Regression and time series
