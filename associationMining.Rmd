@@ -1,0 +1,181 @@
+---
+output: 
+  html_document:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+---
+
+## Association Mining
+
+**Objectives**:
+
+The objective of this document is to give a brief introduction to association mining. This document assumes the users have no prior knowledge of R. After completing this tutorial, you will be able to:
+
+* Mine associated sets
+* Find closed and maximal item sets
+* Use different interestingness measures
+* Visualize associations
+
+Let's load our main data to use:
+
+```{r, message=FALSE, warning=FALSE}
+load(url("http://www.rdatamining.com/data/titanic.raw.rdata?attredirects=0&d= 1"))
+
+```
+
+Install and load packages:
+
+```{r, message=FALSE, warning=FALSE}
+#install.packages("arules")
+require(arules)
+
+```
+
+### Maximal and Closed Itemsets
+
+Mine the closed and maximal itemsets:
+
+```{r, message=FALSE, warning=FALSE}
+closed.itemset <- apriori(titanic.raw, parameter = list(target="closed frequent itemsets"))
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+max.itemset <- apriori(titanic.raw, parameter = list(target="maximally frequent itemsets"))
+
+```
+
+### Initial Mining
+
+Mine initial association rules with default settings (i.e `minsup = 0.1`, `mincon = 0.8`, `maxlength = 10`).
+
+```{r, message=FALSE, warning=FALSE}
+rules <- apriori(titanic.raw)
+```
+
+This creates a total of 27 rules, which is not a lot. However when you have a larger dataset, you are likely to get a much bigger rule set.
+
+Let's inspect the rules:
+
+```{r, message=FALSE, warning=FALSE}
+inspect(rules)
+```
+
+Even with 27 rules, it is very difficult to interpret their meaning. We might need to be more specific about what we are looking for. Assume we are interested in the rules that point to the survival status of the individuals, this means we want the Survived variable to be on the right hand side of the association rule.
+
+### Refine the Results
+
+
+```{r, message=FALSE, warning=FALSE}
+rules.survived <- apriori(titanic.raw,
+                 parameter = list(minlen=2, supp=0.005, conf=0.8),
+                 appearance = list(rhs=c("Survived=No", "Survived=Yes"),
+                                   default="lhs"),
+                 control = list(verbose=F))
+rules.survived<-sort(rules.survived,by="lift")
+quality(rules.survived)<-round(quality(rules.survived),digits=3) #Round the values of interest measure to three digits after decimal point
+```
+
+Before we intrepret the rules, let's go over the code. The setting `parameter = list(...)` allows you to set the parameters such as minimum support/confidence. The setting `appearance = list(...)` allows you to control which rules appear on the right and left hand sides of the rule set.
+
+When we inspect the rules below, we can see that children and female are more likely to survive than men. However, there is some redundancy in the rules. For example; rule 2 provides no extra knowledge in addition to rule 1, since rules 1 tells us that all 2nd-class children survived. Generally speaking, when a rule (such as rule 2) is a super rule of another rule (such as rule 1) and the former has the same or a lower lift, the former rule (rule 2) is considered to be redundant. 
+
+```{r, message=FALSE, warning=FALSE}
+inspect(rules.survived)
+```
+
+### Pruning
+
+First we find rules that are subset of the rules:
+
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+subset.matrix <- is.subset(rules.survived@lhs, rules.survived@lhs,sparse=FALSE)
+
+subset.matrix[lower.tri(subset.matrix, diag=T)] <- NA #Lower triangle and upper triangle are the same so in order to use only one of those, we make lower triangle NA
+```
+
+Find the redundant rules:
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+redundant <- (colSums(subset.matrix, na.rm=T))==1  #We sum the columns of subset.matrix (matrix of 1s and 0s) to see how many supersets a column has. na.rm=T ignores the NA values
+which(redundant) #returns redundant sets
+
+```
+
+Obtain non-redundant rule sets:
+
+```{r, message=FALSE, warning=FALSE}
+rules.pruned <- rules.survived[!redundant]
+inspect(rules.pruned)
+```
+
+Now the relationships are much clearer!
+
+###Different Interestingness Measures
+
+Suppose we want to see `gini`, `leverage` and `oddsRatio` interest measures. We can mine those using the following code:
+
+```{r, message=FALSE, warning=FALSE}
+measure.names <- c("gini", "leverage", "oddsRatio") #Make a name vector of in terestingness measures that we want
+measure.values <- interestMeasure(rules.pruned, measure.names, transactions = titanic.raw)
+measure.values
+
+```
+
+This command gives us the new interest measures in a data frame for each of the rules we provided. For other measures, see help documentation for `interestMeasure` function.
+
+## Visualization
+
+After obtaining rules, we can visualize them for better exploration. We can use scatter plots, balloon plots and parallel coordinates plots. The details of those plots will be explained in class.
+
+Install and load the required package:
+
+
+```{r, message=FALSE, warning=FALSE}
+#install.packages("arulesViz")
+require(arulesViz)
+```
+
+### Scatterplot
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+plot(rules.pruned)
+```
+
+The scatter plot gives us information about how support-confidence-lift measures are distributed along retained rules. However, it is not very helpful to actually see which rules have which values.
+
+To see the relationship between rules we can use either a balloon plot or parallel coordinates graph.
+
+### Balloon Plot
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+plot(rules.pruned, method="graph", control=list(type="items"))
+```
+
+The balloon plot gives us information about the rules, support and lift measures. However it doesn't give us any information about confidence levels.
+
+### Parallel Coordinates Plot
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+plot(rules.pruned, method="paracoord", control=list(reorder=TRUE))
+```
+
+Parallel coordinates plots give us an excellent picture of rules.
+
+
+
+## Useful Links
+
+* Association Mining datasets: http://fimi.ua.ac.be/data/ 
+    + This webpage holds datasets for association mining
+
+* Information about sequential association mining techniques: http://research.microsoft.com/pubs/217091/gupta11a_apdsdm.pdf  
+    + This document holds information regarding a somewhat more advanced topic: sequential mining
