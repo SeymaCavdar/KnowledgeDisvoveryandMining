@@ -1,0 +1,266 @@
+---
+title: "Missing Data Imputation"
+output: 
+  html_document:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+---
+
+First, we need to load the required packages and the data.
+
+```{r, message=FALSE, warning=FALSE}
+#install.packages("Amelia")
+#install.packages("VIM")
+require(Amelia)
+require(VIM)
+data(freetrade)
+summary(freetrade)
+```
+
+## Missingness Analysis
+
+We first need to see if the missingness is at random. To see that, we visualize the missing variables.
+
+Missingness map plot of `Amelia` package visualizes the missing values of the dataset.
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+missmap(freetrade, rank.order = F)
+```
+
+We could also use `aggr` function of `VIM` package to visualize both the total number of missing data in each variable and to see if they have any co-occuring missingness.
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+aggr(freetrade)
+```
+
+Or we could take a look at the missingness patterns of two variables using bar charts of `VIM` package. Let’s assume we want to see if missingness in `tariff` variable has anything to do with the `year` variable.
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+barMiss(freetrade[,c("year","tariff")])
+```
+
+Looks like some years had more missing value than others. If you want to make sure that this relation is properly utilized, you may want to separate your dataset by years and impute accordingly, however while doing that you may be left with too few data in years with too many missing data.
+
+Let’s take a look at the relation between `country` variable and `tariff` variable:
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+barMiss(freetrade[,c("country","tariff")])
+```
+
+The same relationship can be explored using histograms instead of bar charts for numeric variables:
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+histMiss(freetrade[,c("gdp.pc","tariff")])
+```
+
+In this case, there seems to be a uniform missingness of `tariff` values with respect to `gdp.pc` variable. If you look at the proportion of missing data and non-missing data, the proportion is roughly the same in each bin up to `gdp.pc` value 6000.
+
+Or we can use two-variable scatter plot matrix to see the relations of all the numeric variables in one window. First we, need to subset numeric variables:
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+nums <- sapply(freetrade, is.numeric)
+marginmatrix(freetrade[,nums])
+```
+
+Or similarly, we could use single scatterplots of two variables:
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+marginplot(freetrade[,c("intresmi", "tariff")])
+```
+
+The red numbers (58 & 13) show missing values in respective variables. The dark red number (4) tells you, how many cases were missing for both variables. The red dots show the missing points. These two variables don’t have many co-occurrences of missing cases and the missingness is quite evenly dispersed so there seems to be no relation regarding missing values. The values seem to be missing at random.
+
+## Listwise Deletion
+
+To perform listwise deletion, we use `na.omit` function. This function, as the name suggests, omits the rows with `NA` values.
+
+```{r, message=FALSE, warning=FALSE}
+f_lw <- na.omit(freetrade)
+summary(f_lw)
+```
+
+## Missing Data Imputation with Mean/Median
+
+With this method, missing values are replaced with the mean/median of this variable. Even though this is most widely used imputation method, it is usually inappropriate due to the fact that it reduces the variance of the variable.
+
+Our adjusted R^2 increased. Obviously those points were affecting the model.
+
+```{r, message=FALSE, warning=FALSE}
+f_mv <- freetrade
+for (i in 1:ncol(f_mv)){
+  miss <- f_mv[,i]
+  if (is.numeric(miss)){
+    missing <- is.na(miss)
+    miss[missing] <- mean(miss, na.rm = T)
+  }
+  f_mv[,i]<-miss
+}
+summary(f_mv)
+```
+
+## Missing Data Imputation using Random Values from the Same Dataset
+
+With this method, we replace missing values in the variable with randomly sampled non-missing values of the same variable. Even though this is an easy fix, this randomization is not an appropriate solution as it does not reflect the nature of data.
+
+```{r, message=FALSE, warning=FALSE}
+f_rv <- freetrade
+for (i in 1:ncol(f_rv)){
+  miss <- f_rv[,i]
+  missing <- is.na(miss)
+  n.missing <- sum(missing)
+  miss.obs <- miss[!missing]
+  miss[missing]<-sample(miss.obs, n.missing, replace = T)
+  f_rv[,i]<-miss
+}
+summary(f_rv)
+```
+
+## Multiple Imputation: Missing Data Imputation using Amelia
+
+Amelia assumes your data is distributed with a multivariate normal distribution and imputes values based on that assumption by bootrapping (randomly selecting and modelling) values from your data. The advantage of Amelia is that is uses the whole data to estimate your missing values. However, if your data does not have a normal distribution, you may need to transform your variables.
+
+For instance, if the variable with missing values follows a log-normal distribution, you should use log transform of the variable for imputation. And after imputation, you need to transform it back to its original state. You can transform your variable by taking its logarithm initially and you can change it back by exponentiating after you have finished imputation.
+
+```{r, message=FALSE, warning=FALSE}
+data(freetrade)
+
+a.out <- amelia(freetrade, m = 5, ts = "year", cs = "country", 
+                noms = "signed", ords = "polity")
+```
+
+We have performed 5 imputations (m = 5) using `Amelia`. `ts`, stands for "time series" and it represents your time stamp variable while `cs` stands for "cross section" and it represents the cross sectional variable. Determining `ts` and `cs` variables tells amelia to omit those variables from imputation. `noms` expression stands for nominal variables while `ords` expression lets you state ordinal variables.
+
+
+```{r, message=FALSE, warning=FALSE}
+summary(a.out)
+```
+
+Similarly, `idvars` are known as "identification variables" that are used to identify the data point in a database. For instance "SSN (social security number)" is an `idvar`. `Amelia` omits `idvars` from imputation but it still gives you the original values of the omitted variables in the imputed dataset.
+
+```{r, message=FALSE, warning=FALSE}
+a.out2 <- amelia(freetrade, m = 5, idvars = c("year", "country"), 
+                 noms = "signed", ords = "polity")
+```
+
+```{r, message=FALSE, warning=FALSE}
+summary(a.out2)
+```
+
+After obtaining 5 imputed datasets, we average it for the variable to obtain an average imputed dataset. I have only taken the average of `tariff` variable, but you need to average all imputed variables to form a complete dataset.
+
+```{r, message=FALSE, warning=FALSE}
+trf <- cbind(a.out$imputations$imp1$tariff,
+             a.out$imputations$imp2$tariff,
+             a.out$imputations$imp3$tariff,
+             a.out$imputations$imp4$tariff,
+             a.out$imputations$imp5$tariff)
+
+tariff <- rowMeans(trf)
+
+data(freetrade)
+#You can also parallelize this using parallel = "multicore" flag.
+a.out3 <- amelia(freetrade, m = 5, idvars = c("year", "country"),
+                 noms = "signed", ords = "polity", 
+                 parallel = "multicore")
+```
+
+```{r, message=FALSE, warning=FALSE}
+summary(freetrade$tariff)
+```
+
+```{r, message=FALSE, warning=FALSE}
+summary(tariff)
+```
+
+## Single Imputation: Missing Data Imputation using Amelia
+
+If we want to use the entire dataset for imputation instead of bootstrap EM, we can set the flag `boot.type = “none”`. Since we have used the entire set, there is no point in using multiple imputation as the estimates will be the same everytime so we use `m=1`.
+
+```{r, message=FALSE, warning=FALSE}
+data(freetrade)
+
+a.out.single <- amelia(freetrade, m = 1, ts = "year", cs = "country", noms = "signed", ords = "polity", boot.type = "none")
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+summary(a.out.single)
+```
+
+Since we have one imputed dataset, we can simply assign this to the variable.
+
+```{r, message=FALSE, warning=FALSE}
+tariff <- a.out.single$imputations$imp1$tariff
+summary(tariff)
+```
+
+```{r, message=FALSE, warning=FALSE}
+summary(freetrade$tariff)
+```
+
+Suppose that we already know that `tariff` values can only have a minimum value of 0 and a maximum value of 100, we can impose those limits using `Amelia`:
+
+```{r, message=FALSE, warning=FALSE}
+data(freetrade)
+bds <- matrix(c(3, 0, 100), nrow = 1, ncol = 3) #c(variable_no, min, max)
+
+a.out.bds <- amelia(freetrade, m = 1, ts = "year", cs = "country", noms = "signed", ords = "polity", boot.type = "none", bounds = bds)
+```
+
+```{r, message=FALSE, warning=FALSE}
+summary(a.out.bds)
+```
+
+Again, since we have one imputed dataset, we can simply assign this to the variable.
+
+```{r, message=FALSE, warning=FALSE}
+tariff2 <- a.out$imputations$imp1$tariff
+summary(tariff)
+```
+
+```{r, message=FALSE, warning=FALSE}
+summary(tariff)
+```
+
+## Diagnostics
+
+Previously, we performed imputations with and without boundary restrictions. To see if they are different from each other, let’s perform some error diagnostics on the Malaysian subset of `tariff` variable:
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+par(mfrow = c(1,2))
+tscsPlot(a.out, cs = "Malaysia", main = "No logical bounds", var ="tariff", ylim = c(-10,60))
+tscsPlot(a.out.bds, cs = "Malaysia", main = "With logical bounds", var ="tariff", ylim = c(-10,60))
+```
+
+The change in graph is visible. The red dots indicate the imputed values and the lines indicate the error margin of imputations. When we take a look at the last two imputations, the error margins are much smaller.
+
+Let’s take a look at the densities of observed and imputed values. You need to check this for each variable that you used missing value imputation on.
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+par(mfrow = c(2,2))
+compare.density(a.out, var = "tariff",main="Tariff density")
+compare.density(a.out, var = "polity",main="Polity density")
+compare.density(a.out, var = "intresmi",main="Intresmi density")
+compare.density(a.out, var = "fiveop",main="Fiveop density")
+```
+
+The imputations we performed seem to have captured the general behavior of the variable with some deviation. We need to perform overimputation to see if the imputed values for the variables are acceptable.
+
+Overimputation:
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+par(mfrow = c(2,2))
+overimpute(a.out, var = "tariff",main="Tariff Overimputation")
+overimpute(a.out, var = "polity",main="Polity Overimputation")
+overimpute(a.out, var = "intresmi",main="Intresmi Overimputation")
+overimpute(a.out, var = "fiveop",main="Fiveop Overimputation")
+```
+
+In an overimputation graph, the mean imputations are given as dots and the vertical lines of dots represent the 90% confidence interval of that imputation. The black colored orthagonal line is the diagnostics line. If the mean imputation or the 90% confidence interval line of imputation overlaps with the diagnostics line, this means the imputation is within acceptable range and it can be used. If most of the imputations are acceptable, then the dataset can be used. The color of the line (as coded in the legend) represents the fraction of missing observations in the pattern of missingness for that observation.
