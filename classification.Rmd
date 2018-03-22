@@ -1,0 +1,291 @@
+---
+title: "Classification and Error Measurements"
+output: 
+  html_document:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    theme: journal
+    number_sections: no
+    toc: yes
+    toc_float: yes
+---
+
+**Objectives**:
+
+The objective of this document is to give a brief introduction to classification methods and model evaluation. After completing this tutorial you will be able to:
+
+  * Generate classification models
+  * Calculate accuracy, sensitivity and specificity values
+  * Evaluate model performance
+  * Calculate AUC
+
+Let's load the data:
+
+```{r, message=FALSE, warning=FALSE}
+data(iris) 
+head(iris)
+```
+
+```{r, message=FALSE, warning=FALSE}
+shuffleIris <- iris[sample(nrow(iris)),] #Shuffle the dataset 
+trainIris <- shuffleIris[1:100,] #Subset the training set 
+testIris <- shuffleIris[101:150,-5] #Subset the test set without the class column 
+testClass <- shuffleIris[101:150,5] #Get test classes into a separate vector
+```
+
+## k-Nearest Neighbors Classification
+
+```{r, message=FALSE, warning=FALSE}
+require(class)
+predClass <- knn(trainIris[,-5],testIris, trainIris[,5], k = 5) #knn(trainvariables, testvariables, trainclasses, k)
+require(caret)
+confusionMatrix(testClass, predClass)
+```
+
+This has a pretty high accuracy. This is partly due to how clean our data is.
+
+The confusion matrix gives us a table that tells the overlap between true class and the predicted class. The columns give us the true class while the rows give us the predicted ones. Take a look at the `virginica` column in the confusion matrix. One instance of data that is actually `virginica` is classified as `versicolor`. Confusion matrix gives us information about the confusion of the classes by the model.
+
+## Naive Bayes Classification
+
+```{r, message=FALSE, warning=FALSE}
+require(e1071)
+naiveModel <- naiveBayes(Species~., data = trainIris) 
+predClass <- predict(naiveModel, testIris) 
+confusionMatrix(testClass, predClass)
+```
+
+This also has a pretty high accuracy.
+
+## Decision Trees
+
+```{r, message=FALSE, warning=FALSE}
+require(rpart)
+decisionModel <- rpart(Species~., data = trainIris) 
+predClass <- predict(decisionModel, testIris, type = "class") 
+confusionMatrix(testClass, predClass)
+```
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+require(rpart.plot)
+prp(decisionModel) 
+```
+
+Keep in mind that due to sampling your decision tree can look different than this.
+
+This also has a very high accuracy; however, accuracy in itself is not sufficient in evaluating models. We should also consider the specificity and sensitivity values. Because, if there is an imbalance in the class, say you have 1000 `class A` in your test data and 10 `class B`. Then, if you label all the test data as `class A`, you will have high accuracy (1000/1010), however you weren't able to detect any instances with `class B`, so your model is not very good. Sensitivity and Specificity both needs to be high for your model to be good.
+
+## Logistic Regression
+
+Logistic regression is the type of regression where you fit a binary classification model. A binary classification model is the type of model where your output variable has 2 classes. Now this doesn’t mean that if you have a data that has more than one class (such as the iris data) cannot be modeled using a logistic regression. The idea is that you model each class vs. all others individually.
+
+Let's load the data: 
+
+```{r, message=FALSE, warning=FALSE}
+data <- read.csv(url("http://archive.ics.uci.edu/ml/machine-learning-databases/cmc/cmc.data"), sep=",", header = F) 
+names(data) <- c("w.age", "w.ed", "h.ed", "child", "rel","w.occ", "h.occ", "ind", "med", "outcome") 
+data$w.ed <- as.factor(data$w.ed) 
+data$h.ed <- as.factor(data$h.ed) 
+data$rel<-as.factor(data$rel) 
+data$w.occ <- as.factor(data$w.occ) 
+data$h.occ <- as.factor(data$h.occ) 
+data$ind <- as.factor(data$ind) 
+data$med <- as.factor(data$med) 
+data$outcome <- as.factor(data$outcome) 
+summary(data)
+```
+
+As you can see, we have 3 classes in `outcome` variable, which means that we have to generate 3 different models to perform logistic regression on this data for each class.
+
+Let's subset the data into training and testing sets:
+
+```{r, message=FALSE, warning=FALSE}
+data <- data[sample(nrow(data)),] #Shuffles the data by sampling nrow(data) observations from the data without replacement 
+trainInd <- round(nrow(data)*0.7) #Take 70% of data as training 
+train <- data[1:trainInd,] #Subset training data 
+test.outcome <- data[-(1:trainInd),10] #Separate the outcome values of test 
+test <- data[-(1:trainInd),-10] #Subset test data and remove outcome variable
+```
+
+If you like, you can separate the training test further into training and validation tests to see if your model is working properly.
+
+In R, we can train logistic regression with a single line of code. `glm` function computes logistic regression using `family = binomial("logit")` parameter. This means that our output variable has a binomial distribution of `1s` and `0s`. If you want to classify more that two outcomes, you will need to use two combinatorials of those outcomes (one vs. all). This is what we will try to do.
+
+```{r, message=FALSE, warning=FALSE}
+iris2 <-iris 
+iris2$Species<-as.numeric(iris2$Species)
+#Create dataset for setosa 
+iris2.setosa <-iris2 
+iris2.setosa$Species <- as.factor(iris2.setosa$Species==1)
+#Create dataset for versicolor 
+iris2.versicolor <-iris2 
+iris2.versicolor$Species <- as.factor(iris2.versicolor$Species==2) 
+#Create dataset for virginica 
+iris2.virginica <-iris2 
+iris2.virginica$Species <- as.factor(iris2.virginica$Species==3)
+logit.setosa <- glm(Species~., data = iris2.setosa, family = binomial)
+summary(logit.setosa)
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+class1.train <- train 
+class1.train$outcome <- class1.train$outcome==1 #Get true for class = 1, false for otherwise 
+class1.model <- glm(outcome~., data = class1.train, family = binomial("logit")) 
+summary(class1.model)
+```
+
+There are some irrelevant features in this model, so we can use stepwise removal to retain only relevant ones. There are other methods for variable selection which we will not cover in this tutorial.
+
+```{r, message=FALSE, warning=FALSE}
+class1.model2 <- step(class1.model, direction="backward", trace=0) 
+summary(class1.model2)
+```
+
+After generating the model for outcome = 1, not we have to generate models for other outcome values.
+
+For outcome = 2:
+
+```{r, message=FALSE, warning=FALSE}
+class2.train <- train 
+class2.train$outcome <- class2.train$outcome==2 #Get true for class = 1, false for otherwise 
+class2.model <- glm(outcome~., data = class2.train, family = binomial("logit")) 
+summary(class2.model)
+```
+
+```{r, message=FALSE, warning=FALSE}
+class2.model2 <- step(class2.model, direction="backward", trace=0) 
+summary(class2.model2)
+```
+
+For outcome = 3:
+
+```{r, message=FALSE, warning=FALSE}
+class3.train <- train 
+class3.train$outcome <- class3.train$outcome==3 #Get true for class = 1, false for otherwise 
+class3.model <- glm(outcome~., data = class3.train, family = binomial("logit")) 
+summary(class3.model)
+```
+
+```{r, message=FALSE, warning=FALSE}
+class3.model2 <- step(class3.model, direction="backward", trace=0) 
+summary(class3.model2)
+```
+
+In these models, p-values show the significance level of the variables. The residual deviance and null deviance show the variability of the residuals and the model predictions respectively. We want them to be as small as possible. Coefficients explain the effect of that variable on the outcome.
+
+Now that we have generated our models, we can perform classification with the test set we have set aside:
+
+```{r, message=FALSE, warning=FALSE}
+class1.test <- predict(class1.model2, test, type = "response") #Predicts probability of belonging to that class 
+class2.test <- predict(class2.model2, test, type = "response") 
+class3.test <- predict(class3.model2, test, type = "response") 
+classProbs <- cbind(class1.test, class2.test, class3.test) 
+classProbs <- classProbs/rowSums(classProbs) 
+tclassProbs <- data.frame(t(classProbs)) 
+classes <- as.factor(sapply(tclassProbs, which.max)) 
+confusionMatrix(classes, test.outcome)
+```
+
+This model obviously does not perform well. It can only predict the true class 50% of the time, which is better than chance level in this case because prediction true class out of 3 possible values has a chance value of 33% but still, 50% is not good. This process is also very difficult to do when working with more than 3 classes. With 4 classes, you need to generate 6 models. With 5 classes, you need to generate 10 models and with 10 classes you need to generate 45 models for classification. There are packages that do this for you but they are won't be covered in this tutorial.
+
+To evaluate a single logistic regression model, we can use the following code to get the p-value associated with it. Assume we want to test if class3.model2 is a viable model:
+
+```{r, message=FALSE, warning=FALSE}
+with(class3.model2, pchisq(null.deviance - deviance, df.null - df.residual, lower.tail = FALSE))
+```
+
+The p-value is <<0.05, so the model is appropriate for use.
+
+Suppose we want to see the probability and the confidence interval of beloging to that class by a random variable in the dataset for `class3.model2`, first we need to get the probabilities of that class along with the standard error of the prediction, then we plot it with the desired variable:
+
+```{r, message=FALSE, warning=FALSE}
+newdata <- cbind(test, predict(class3.model2, newdata = test, type = "link",se = TRUE)) 
+newdata <- within(newdata, { 
+  PredictedProb <- plogis(fit) 
+  LL <- plogis(fit - (1.96 * se.fit)) 
+  UL <- plogis(fit + (1.96 * se.fit)) 
+})
+```
+
+Suppose we want to see how the probabilities change by `w.age`, the following code visualizes that relationship:
+
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+ggplot(newdata, aes(x = w.age, y = PredictedProb)) + geom_ribbon(aes(ymin = LL,
+                                                                     ymax = UL), alpha = 0.2) + geom_line(size = 1)
+```
+
+## Support Vector Machines (SVMs)
+
+SVMs can be used both for classification and regression. Luckily enough, you don't have to explicitly perform one vs. all classification with SVMs. Even though SVMs perform one vs. all classification, they do this internally and we can simply use the `svm` function in `e1071` package. Let's use the `iris` data set:
+
+```{r, message=FALSE, warning=FALSE}
+svm.model <- svm(Species~., data = trainIris) 
+summary(svm.model)
+```
+```{r, message=FALSE, warning=FALSE}
+svm.preds <- predict(svm.model, testIris) 
+confusionMatrix(svm.preds, testClass)
+```
+
+SVM performed well on `iris` dataset with the accuracy of 94%.
+
+## Artificial Neural Networks (ANNs)
+
+ANNs can also be used for both regression and classification.
+
+```{r, message=FALSE, warning=FALSE}
+require(nnet)
+nnet.model <- nnet(outcome~., data = train, size = 25) #size defines hidden layer size
+```
+```{r, message=FALSE, warning=FALSE}
+print(nnet.model)
+```
+```{r, message=FALSE, warning=FALSE}
+nnet.preds <- predict(nnet.model, test) #Returns class probabilities, so we should perform some data cleaning as we did in the logistic regression
+nnet.preds <- nnet.preds/rowSums(nnet.preds) 
+tnnet.preds <- data.frame(t(nnet.preds)) 
+classes <- as.factor(sapply(tnnet.preds, which.max)) 
+levels(classes) <- c("1","2","3") 
+confusionMatrix(classes, test.outcome)
+```
+
+Neural Network performed on par with the logistic regression. However, neural network is very sensitive to hidden layer size. It is advised to use different sizes of hidden layers when generating neural network models.
+
+## Evaluation Measures
+
+There are several evaluation measures reported in the outputs of the models generated above. Three most important values are “*Sensitivity*”, “*Specificity*” and “*Accuracy*”. Accuracy gives you which percent of the data you correctly classified. However this is not a good measure if there is a class unbalance. For instance, let’s say that you have 100 data points of which 95 are `class a` and 5 are `class b`. You can classify all 100 points as `class a` and you will still have 95% accuracy, even though you failed to find any data that belongs to `class b`. This is why we need sensitivity and specificity. Sensitivity tells us how many of the data that are of `class a`, we were able to classify as `class a`. In this example, this would be 1. Because every data that belonged to `class a` was classified as `class a`. Specificity tells us how many data points that were `class b` were classified as `class b`. In this example, specificity will be zero because none of the data that were `class b` was classified as such. Ideally, we want both of these values to be close to one. If all your values are close to one, then you have a good model.
+
+### Receiver Operating Characteristic (ROC) Curve and Area Under Curve (AUC)
+
+In a Receiver Operating Characteristic (ROC) curve the true positive rate (Sensitivity) is plotted in function of the false positive rate (100-Specificity) for different cut-off points. Each point on the ROC curve represents a sensitivity/specificity pair corresponding to a particular decision threshold. A test with perfect discrimination (no overlap in the two distributions) has a ROC curve that passes through the upper left corner (100% sensitivity, 100% specificity). Therefore the closer the ROC curve is to the upper left corner, the higher the overall accuracy of the test.
+
+Let's plot ROC curve of the `class3.model2` that we fit with logistic regression:
+
+```{r, message=FALSE, warning=FALSE,fig.align='center'}
+#install.packages(pROC)
+class3probs<-predict(class3.model2,type="response")
+require(pROC)
+roccurve <- roc(class3.model2$y, class3probs)
+plot(roccurve)
+```
+
+```{r, message=FALSE, warning=FALSE}
+auc(roccurve)
+```
+
+We want that curve to be far away from straight line. Ideally we want the area under the curve as high as possible. We want to make almost 0% mistakes while identifying all the positives, which means we want to see AUC value near to 1.
+
+As can be seen, the AUC for logistic regression model of class 3 is 0.66. It is a fairly good model but it can be enhanced.
+
+## Useful Links
+
+  * Caret package documentation: http://www.jstatsoft.org/v28/i05/paper 
+    + This webpage holds examples and advanced methods for generating both classification and regression models using `caret` package.
+  * Accurately determining prediction error: http://scott.fortmann-roe.com/docs/MeasuringError.html
+    + This document explains the details of error measurements
+  * Multinomial logit model website: http://cran.r-project.org/web/packages/mlogit/vignettes/mlogit.pdf 
+    + This website contains examples and usage details of the `mlogit` package
