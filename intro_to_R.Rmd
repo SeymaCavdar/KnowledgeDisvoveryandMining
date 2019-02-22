@@ -16,7 +16,7 @@ output:
 # R Data Types And Basic Functionalities
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. The purpose of this notebook is to enable you to play around with basic functionalities of R.
 
-The website you see now is a rendered HTML file. to play with the .Rmd file, go to the [original repository](https://github.com/SeymaCavdar/R_for_KnowledgeDiscoveryandMining) and download the .Rmd file and run the codes in RStudio. 
+The website you see now is a rendered HTML file. to play with the .Rmd file, go to the [original repository](https://github.com/SeymaCavdar/KnowledgeDisvoveryandMining) and download the .Rmd file and run the codes in RStudio. 
 
 ## Data Structures of R
 
