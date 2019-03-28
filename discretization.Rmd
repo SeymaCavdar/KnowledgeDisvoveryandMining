@@ -13,6 +13,11 @@ output:
     toc_float: yes
 ---
 
+```{r setup, include=FALSE}
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
 **Objectives**:
 
 The objective of this document is to give a brief introduction to dimensionality reduction and discretization. At the end of this tutorial you will have learned
@@ -298,6 +303,37 @@ fit.iso <- isomap(d, ndim=2, k = 3, fragmentedOK = T)
 #Data might be fragmented, we tell the function that it's ok.
 new.data.iso <- fit.iso$points
 ```
+
+## Feature Selection
+
+Feature selection is basically selecting the most appropriate subset of attributes based on the target attribute. Here, we will cover Minimum Redundancy Maximum Relevance (mRMR) feature selection. Note that there are other methods available for feature selection such as mutual information based criterion.
+
+### Minimum Redundancy Maximum Relevance (mRMR)
+
+mRMR tries to maximize relevance according to the target variable based on mutual information and chooses a variable where the mutual information between the variable and the others is the least minimum (minimize redundancy).
+
+In order to perform mRMR feature selection, we will use `mRMRe`package. 
+
+```{r, message=FALSE, warning=FALSE}
+if  ("mRMRe"  %in%  rownames(installed.packages())  ==  FALSE){
+  install.packages("mRMRe")
+}
+require(mRMRe)
+data(cgps) #load the data
+```
+
+We will use `mRMR.classic` function to select features. This function requires data frame with the columns of the following types: "numeric", "ordered_factor" and "Surv". Also, we should convert the data set as `mRMRe.Data` type. Then, we will use the `mRMR.classic` function with the parameters: `data`, `target_indices` (index of the target feature (column) from the data matrix), and `feature_count` (number of features to be selected by mRMR feature selection). In this example, we will select 3 features for 3 different target variables. 
+
+```{r, message=FALSE, warning=FALSE}
+# Convert the data type
+feature_data <- mRMR.data(data =  data.frame(cgps.ge))
+# Create an mRMR filter and obtain the indices of selected features
+filter3 <- mRMR.classic(data = feature_data, target_indices = 3:5,
+                       feature_count = 3)
+solutions(filter3)
+```
+
+As the output, we can see the three features selected for each target index. For example; mRMR function selected 592nd, 805th and 673th variables for the 3rd target variable; 578th, 339th and 251st variables for the 4th target variable, and 149th, 586th and 160th variables for the 5th target variable.
 
 ## Discretization
 
